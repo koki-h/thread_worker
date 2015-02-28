@@ -4,6 +4,9 @@ class Worker
   attr_reader :thread
 
   def initialize
+    #前のワーカの仕事が終わるまでコンカレンシーを超えた分の新規ワーカの登録ができない。
+    #コンカレンシーは登録を制限するのではなく、それぞれのスレッドに判断させたほうがいいような。
+    #スレッドは無条件にスタートするが、仕事の実行は自分の番が来るまで待つようにする。
     while(true) do
       @@mutex.synchronize {
         if @@workers.count < @@concurrency
