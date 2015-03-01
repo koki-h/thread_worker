@@ -1,21 +1,25 @@
 class Worker
   @@workers = []
+  @@waiting = 0
   @@mutex = Mutex.new
   attr_reader :thread
 
   def initialize
-    #前のワーカの仕事が終わるまでコンカレンシーを超えた分の新規ワーカの登録ができない。
-    #コンカレンシーは登録を制限するのではなく、それぞれのスレッドに判断させたほうがいいような。
-    #スレッドは無条件にスタートするが、仕事の実行は自分の番が来るまで待つようにする。
+    @@mutex.synchronize {
+      @@waiting += 1
+    }
     while(true) do
       @@mutex.synchronize {
         if @@workers.count < @@concurrency
+          @@workers << self 
           @thread = Thread.start do  
             yield
             @@workers.delete(self)
           end
-          @@workers << self 
+          @@waiting -= 1
           return
+        else
+          sleep 1
         end
       }
     end
@@ -28,6 +32,7 @@ class Worker
 
     def join
       @@mutex.synchronize {
+        while (@@waiting > 0) do sleep 1 end
         @@workers.each do |t|
           t.thread.join
         end
@@ -36,11 +41,11 @@ class Worker
   end
 end
 
-Worker.concurrency =4 
+Worker.concurrency =3 
 20.times do |i|
   puts "no#{i}"
   Worker.new{
-     sleep 3
+     sleep 1
      puts "yes!#{i}"
      #open("#{i}.txt","w") {|f|f.puts i}
   }
