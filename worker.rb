@@ -41,6 +41,7 @@ class Worker
   end
 end
 
+#ex. There are 20 tasks on 3 parallel thereads. 
 Worker.concurrency =3 
 20.times do |i|
   puts "no#{i}"
